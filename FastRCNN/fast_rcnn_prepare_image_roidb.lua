@@ -133,7 +133,7 @@ end
 -- computes for gt_rois, target_rois and a bounding box regression
 function fast_rcnn_compute_targets(conf, roidb, rois, gt_rois)
   
-  local overlap = boxoverlap(rois:float(), gt_rois:float())
+  local overlap = boxoverlap(rois, gt_rois)
   
   -- get gt rois with greates overlap
   local max_overlap, max_gt = torch.max(overlap, 2)

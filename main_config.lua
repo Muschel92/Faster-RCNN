@@ -45,8 +45,8 @@ if not opt then
     -- Options for loading/ saving the model
     cmd:option('-create_network', false  , 'true if new network should be created')
 
-    cmd:option('-network_path', '/data/ethierer/ObjectDetection/FasterRCNN/Model/ProposalNetwork/stage_1/'   , 'path to the networks')
-    cmd:option('-model_type', 'VGG16_RPN_Network.t7' , 'name of the model that should be loaded')
+    cmd:option('-network_path', '/data/ethierer/ObjectDetection/FasterRCNN/Model/ProposalNetwork/stage_2/'   , 'path to the networks')
+    cmd:option('-model_type', 'VGG16_Oct922:06_ep16_2.t7' , 'name of the model that should be loaded')
     cmd:option('-save_epoch', 2, 'every how many epochs the model is saved')
     
     -- Options for learning
@@ -58,11 +58,11 @@ if not opt then
     cmd:option('-epoch_step', 12, 'nr of epochs when the learning rate decreases by 0.9')
     cmd:option('-gamma', 0.1, 'factor to reduce the learning rate every epoch_step')
     cmd:option('-batch_size', 1 , 'images per batch (only one)')
-    cmd:option('-weight_scec', 1, 'weight for the one of the two criteriones (Spatial Cross Entropy)')
-    cmd:option('-weight_l1crit', 10, 'weight for the one of the two criteriones (Smooth L1 Criterion)')
+    cmd:option('-weight_scec', 0.5, 'weight for the one of the two criteriones (Spatial Cross Entropy)')
+    cmd:option('-weight_l1crit', 5, 'weight for the one of the two criteriones (Smooth L1 Criterion)')
     cmd:option('-rois_div', 1, 'number to divide gradients during training (grads / batchsize / rois_div)')
     cmd:option('-smoothL1', 1, 'use smoothL1Criterion or not (MSECriterion)')
-    cmd:option('-sizeAverage_cls', 1, 'set sizeAverage = true (1) or false (0) for classification')
+    cmd:option('-sizeAverage_cls', 0, 'set sizeAverage = true (1) or false (0) for classification')
     cmd:option('-sizeAverage_reg', 0, 'set sizeAverage = true (1) or false (0) for regression')
 
     -- Options for saving progress

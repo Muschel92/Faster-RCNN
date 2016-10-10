@@ -27,6 +27,7 @@ dofile('utilis/util_scale_rois.lua')
 dofile('utilis/util_bbox_from_regression.lua')
 dofile('utilis/util_restric_rois_image_size.lua')
 dofile('utilis/util_calculate_bbox_from_reg_output.lua')
+dofile('utilis/util_nms.lua')
 dofile('utilis/util_img_from_mean.lua')
 dofile('Preprocessing/preparation_cal_feature_map_size.lua')
 
@@ -74,12 +75,12 @@ if conf.testing then
     
 else
   if conf.train_stage == 'rpn_1' then
-    dofile 'ProposalNetwork/proposal_train_stage1.lua'
+    dofile 'ProposalNetwork/proposal_train_stage1_simple.lua'
     if conf.do_validation then
       dofile 'ProposalNetwork/proposal_validation_stage1.lua'
     end
   else 
-    dofile 'ProposalNetwork/proposal_train_stage2.lua'
+    dofile 'ProposalNetwork/proposal_train_stage2_simple.lua'
     if conf.do_validation then
       dofile 'ProposalNetwork/proposal_validation_stage2.lua'
     end

@@ -1,4 +1,4 @@
-
+th F  
 --require 'torch'   -- torch
 require 'loadcaffe'
 require 'torch'

@@ -88,7 +88,7 @@ function get_image_blob(conf, images, random_scale_inds, random_flipped)
   -- for every image
   for i = 1, num_images do
       -- load the image (channel x height x width)
-      local im = image.load(images[i].path, 3, 'byte')
+      local im = image.load(images[i].path, 3, 'byte'):float()
       
       if(random_flipped[i] == 2) then
         im = image.hflip(im)

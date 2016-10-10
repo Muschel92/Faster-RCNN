@@ -14,7 +14,7 @@ inn = require 'inn'
 --conf = config()
 ---------------------------------------------------------------------------------------------
 -- load trained caffe model
-old_model = torch.load('/data/ethierer/ObjectDetection/FasterRCNN/Model/resnet-50.t7')
+old_model = torch.load('/data/ethierer/ObjectDetection/FasterRCNN/Model/OriginalModels/resnet-50.t7')
 
 model_feat = nn.Sequential()
 --model:cuda()
@@ -26,7 +26,6 @@ end
 
 
 roi_pooling = inn.ROIPooling(7,7):setSpatialScale(1/16)
-
 par = nn.ParallelTable()
 par:add(model_feat)
 par:add(nn.Identity())

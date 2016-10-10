@@ -18,9 +18,9 @@ model:cuda()
 model = makeDataParallel(model, opt.nGPU) 
 
 criterion = nn.ParallelCriterion():cuda()
---weights = torch.ones(conf.numClasses +1) *conf.fg_weights
---weights[conf.numClasses +1] = conf.bg_weights
-log = cudnn.SpatialCrossEntropyCriterion():cuda()
+weights = torch.ones(conf.numClasses +1) *5
+weights[conf.numClasses +1] = 1
+log = nn.CrossEntropyCriterion():cuda()
 
 --sl1 = nn.MSECriterion():cuda()
 --sl1 = nn.AbsCriterion():cuda()

@@ -23,6 +23,8 @@ dofile('utilis/util_img_from_mean.lua')
 dofile('utilis/util_generate_mini_batch_files.lua')
 dofile('utilis/util_generate_batch_roidbs.lua')
 dofile('utilis/util_flip_rois.lua')
+dofile('utilis/util_binaryToIdx.lua')
+dofile('utilis/util_pascal_voc_2007_labels.lua')
 dofile('Preprocessing/preparation_cal_feature_map_size.lua')
 dofile('FastRCNN/fast_rcnn_prepare_image_roidb.lua')
 dofile('FastRCNN/fast_rcnn_map_im_rois_to_feat_map.lua')
@@ -74,7 +76,7 @@ if conf.testing then
       end  
     end
 else
-	dofile('FastRCNN/fast_rcnn_train.lua')
+	dofile('FastRCNN/fast_rcnn_train_simple.lua')
   --dofile('FastRCNN/fast_rcnn_validate.lua')
 
 	print '==> training!'

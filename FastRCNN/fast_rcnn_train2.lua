@@ -32,7 +32,7 @@ local function paramsForEpoch(epoch)
     end
     local regimes = {
         -- start, end,    LR,   WD,
-        {  1,    12,   1e-3,   5e-4, },
+        {  1,    3,   1e-3,   5e-4, },
         {  13,    20,   1e-4,   5e-4, },
         { 19,     1e8,   1e-4,   5e-4  },
         { 13,     1e8,   1e-4,   0 },
@@ -198,8 +198,8 @@ function train_batch(roidbs)
       local mini_batch = {}
       local target_output = {}
       
-      table.insert(mini_batch, train_batch[1]:cuda())
-      table.insert(mini_batch, train_batch[2]:cuda())
+      table.insert(mini_batch, train_batch[1]:clone():cuda())
+      table.insert(mini_batch, train_batch[2]:clone():cuda())
       
       local target_label = train_batch[4]
       --target_label:resize(1, 1, train_batch[4]:size(1)):copy(train_batch[4])
@@ -209,6 +209,10 @@ function train_batch(roidbs)
       
       --local sm = nn.SoftMax():cuda()
       output = model:forward(mini_batch)
+      
+      local temp, temp_idx = torch.max(output[1], 2)
+      print(train_batch[4]:cat(temp_idx:float(), 2))
+      print(output)
             
       local size = output[2]:size()
       local nr_rois = output[1]:size(1)
@@ -225,7 +229,6 @@ function train_batch(roidbs)
       table.insert(gradient, sl1:backward(output[2], target_output[2]))
       
       if conf.divGrad == 1 then
-        --local mean = gradient[1]:mean()
         gradient[1]:div(nr_rois)
         gradient[2]:div(nr_rois)
       end
@@ -234,90 +237,11 @@ function train_batch(roidbs)
       model:backward(mini_batch, gradient)   
       --------------------------------------------------------------------------------------
       collectgarbage()
-      
-      local corr, false_neg, false_pos, true_pos = check_error(output[1]:float(), train_batch[4]:long())
-      
-      local temp, temp_idx = torch.max(output[1], 2)
-      --print(train_batch[4]:cat(temp_idx:float(), 2))
-      --print(output)
-      
-      train_corr = train_corr + corr
-      train_true_pos = train_true_pos + true_pos
-      train_false_neg = train_false_neg + false_neg
-      train_false_pos = train_false_pos + false_pos
+ 
 
-      print (('Corr: %.2f  FN: %.2f  FP: %.2f  TP: %.2f'):format(corr, false_neg, false_pos, true_pos))
       --------------------------------------------------------------------------------------
-      collectgarbage()
-      if torch.sum(train_batch[6]:eq(1)) > 0 then
-        local reg = output[2][train_batch[6]:eq(1)]:float()
-        reg = reg:reshape(reg:size(1)/4, 4)
-        local idx = train_batch[4]:lt(21)
-        
-        -- get the gt indexes for positive rois
-        local gt_idx = train_batch[7][idx:eq(1)]
-        idx = idx:float()
-        -- get the rois of positive rois
-        idx = idx:cat(idx,2):cat(idx,2):cat(idx, 2):long()
-        local rois = train_batch[3][idx:eq(1)]:float()
-                
-        local new_rois = torch.Tensor()
-        
-        if rois:dim() > 0 then
-          rois = rois:reshape(rois:size(1)/4, 4)  
+      --collectgarbage()
 
-          new_rois = bbox_from_regression(rois, reg, mean_boxes[2], stds_boxes[2]:reshape(1,4))
-          -- restrict rois to image size
-          local size_im = torch.Tensor{train_batch[1][1]:size(2), train_batch[1][1]:size(3)}
-          new_rois = restrict_rois_to_image_size(new_rois, size_im)
-          new_rois = torch.round(new_rois)
-
-          -- calculate overlap between new_rois and the scaled gt_boxes
-          local overlap = boxoverlap(new_rois:float(), train_batch[8]:float())
-          
-          for j = 1, new_rois:size(1) do
-            reg_acc = reg_acc + overlap[j][gt_idx[j]]
-            --print(new_rois[j]:cat(train_batch[8][gt_idx[j]]):cat(torch.CudaTensor({overlap[j][gt_idx[j]]})))
-            if overlap[j][gt_idx[j]] > 0.5 then
-              reg_correct = reg_correct + 1
-            end
-          end
-          
-          local idx_img = train_batch[2][{{},1}][torch.ne(train_batch[4], 21)]
-          
-          
-          reg_correct = reg_correct / rois:size(1)    
-          reg_acc = reg_acc / rois:size(1)
-        end
-      
-        local img_inds = train_batch[2][{{},1}]
-        local idx_img = img_inds[train_batch[4]:lt(21)]
-        local l = train_batch[4][train_batch[4]:lt(21)]
-        idx_img = idx_img:cat(idx_img, 2):cat(idx_img, 2):cat(idx_img, 2)
-        
-        local gt_boxes_idx = 1
-        for i = 1, #roidbs do
-          if(processedImages + i) <= imgCount then
-            table.insert(save_images, train_batch[1][i]:byte())
-            
-            local image_rois = new_rois[torch.eq(idx_img, i)]
-            
-            if image_rois:dim() > 0 then
-              image_rois = image_rois:reshape(image_rois:size(1)/4, 4)
-            end
-            table.insert(pos_boxes, image_rois)
-            table.insert(list_labels, l[idx_img[{{},1}]:eq(i)]:clone())
-            table.insert(gt_boxes, train_batch[8][{{gt_boxes_idx, gt_boxes_idx + roidbs[i].gt_boxes:size(1) - 1}, {}}])
-            table.insert(im_sizes, train_batch[9][i])          
-            gt_boxes_idx = gt_boxes_idx + roidbs[i].gt_boxes:size(1)
-          else 
-            break
-          end  
-          
-        end
-        
-        processedImages = processedImages + conf.batch_size
-      end
       
       f = f / conf.batch_size
       
@@ -348,63 +272,4 @@ function train_batch(roidbs)
       epoch, batchNumber, math.floor(numOfTrainImages/conf.batch_size), timer:time().real, f, 
       optimState.learningRate, reg_acc, reg_correct ))
   
-
-  if processedImages >= imgCount and firstImages then
-    for i = 1,imgCount do
-      --calculate back to original image (bgr->bgr and mean/std calculation)
-      collectgarbage()
-      local im_size = im_sizes[i]
-      
-      local im  = save_images[i][{{},{1, im_size[1]}, {1, im_size[2]}}]
-      
-      -- change back from brg to rgb
-      im = im:index(1, torch.LongTensor{3,2,1})
-         
-      -- add mean to image
-      im = img_from_mean(im, conf.image_means)
-      
-      local gt = gt_boxes[i]:clone()
-      local pos_ex_boxes = pos_boxes[i]:clone()
-      local labels = list_labels[i]
-      pos_ex_boxes  = restrict_rois_to_image_size(pos_ex_boxes, im_size)
-      
-      for j = 1,gt:size(1) do
-         im = image.drawRect( im:byte(), gt[{j,2}], gt[{j,1}], gt[{j,4}], gt[{j,3}], {lineWidth = 1, color = {0, 255, 0}})    
-      end
-      
-      image.save(conf.save_model_state.. 'Images/trainGt' .. i .. '.png', im)
-      
-      -- draw all positive boxes into image
-      if pos_ex_boxes:dim() > 1 then
-        for j = 1,pos_ex_boxes:size(1) do
-          local x2, y2 = 0
-          local col = torch.Tensor(3)
-          col[1] = torch.random(1,255)
-          col[2] = torch.random(1,255)
-          col[3] = torch.random(1,255)
-          if(pos_ex_boxes[{j,1}] < im_size[1] and pos_ex_boxes[{j,2}] < im_size[2] and pos_ex_boxes[{j,1}] > 0 and pos_ex_boxes[{j,2}] > 0) then
-
-            if (pos_ex_boxes[{j,3}] > im_size[1]) then
-              x2 = im_size[1]
-            else
-              x2 = pos_ex_boxes[{j,3}]
-            end
-            
-            if pos_ex_boxes[{j,4}] > im_size[2] then
-              y2 = im_size[2]
-            else
-              y2 = pos_ex_boxes[{j,4}]
-            end
-            im = image.drawRect(im, pos_ex_boxes[{j,2}], pos_ex_boxes[{j,1}],pos_ex_boxes[{j,4}], pos_ex_boxes[{j,3}], {lineWidth = 1, color = col})       
-            local text = loadLabelFromNumber(labels[j])
-            im = image.drawText(im, text, pos_ex_boxes[{j,2}], pos_ex_boxes[{j,1}], {color = {0, 0, 0}, bg = {255, 255, 255}, size = 1})
-          end
-        end
-      end
-            
-      image.save(conf.save_model_state.. 'Images/trainEx' .. i .. '.png', im)
-      
-    end
-    firstImages = false
-  end
 end

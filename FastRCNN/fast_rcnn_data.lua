@@ -1,5 +1,6 @@
 
 conf.image_means =  torch.load(conf.data_path .. 'meanImage.t7')
+--conf.image_means:div(255)
 
 if(conf.prep_image_roidb) then
   imdb_train = torch.load(conf.data_path .. 'train_roidb.t7')

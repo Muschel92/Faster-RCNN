@@ -18,7 +18,6 @@ model = model:cuda()
 
 model = makeDataParallel(model, opt.nGPU) 
 
-
 criterion = nn.ParallelCriterion():cuda()
 log = cudnn.SpatialCrossEntropyCriterion(torch.Tensor{1, conf.bg_weights,0}):cuda()
 sl1 = nn.SmoothL1Criterion():cuda()

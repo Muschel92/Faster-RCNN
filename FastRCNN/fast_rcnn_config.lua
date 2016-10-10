@@ -24,7 +24,7 @@ if not opt then
     cmd:option('-scales', torch.Tensor{600} , 'image scale - the short edge of an input image')
     cmd:option('-max_size', 1000 , 'max pixel size of scaled input image')
     cmd:option('-feature_map_size', torch.Tensor{16,16}, 'for testing')
-    cmd:option('-feature_map', 'VGG16_Feature_Map.t7', 'path of feature map model')
+    cmd:option('-feature_map', 'Res50_Feature_Map.t7', 'path of feature map model')
     cmd:option('-calc_feature_map', false   , 'true if feature map size needs to be calculated')
     cmd:option('-prep_image_roidb', false , 'true if image roidb preparation needs to be calculated')
     
@@ -37,7 +37,7 @@ if not opt then
     -- Options for loading the model
     cmd:option('-create_network', false  , 'true if new network should be created')
     cmd:option('-network_path', '/data/ethierer/ObjectDetection/FasterRCNN/Model/FastRCNN/'   , 'path to the networks')
-    cmd:option('-model_type', 'VGG16_Fast_Rcnn_128.t7' , 'name of the model that should be loaded')
+    cmd:option('-model_type', 'Res50_Fast_Rcnn_128_2.t7' , 'name of the model that should be loaded')
     
     -- Options for learning
     cmd:option('-do_validation', false, 'true if there is also a validation set')
@@ -49,8 +49,8 @@ if not opt then
     cmd:option('-gamma', 0.1, 'factor to reduce the learning rate every epoch_step')
     cmd:option('-batch_size', 2 , 'images per batch (only one)')
     cmd:option('-weight_scec', 1 , 'weight for the one of the two criteriones (Spatial Cross Entropy)')
-    cmd:option('-weight_l1crit', 1/128, 'weight for the one of the two criteriones (Smooth L1 Criterion)')
-    cmd:option('-sizeAverage_log', 1, 'weight of background samples, when weight of foreground samples is 1')
+    cmd:option('-weight_l1crit', 1, 'weight for the one of the two criteriones (Smooth L1 Criterion)')
+    cmd:option('-sizeAverage_log', 0, 'weight of background samples, when weight of foreground samples is 1')
     cmd:option('-sizeAverage_sl1', 0, 'weight of background samples, when weight of foreground samples is 1')
     
     -- Options for Faster RCNN
@@ -69,10 +69,10 @@ if not opt then
     
     -- Options for saving progress
     cmd:option('-save_model_state', '/data/ethierer/ObjectDetection/FasterRCNN/Logger/' , 'Path where to save the current stats of the net')
-    cmd:option('-save_epoch', 4, 'every how many epochs the model is saved')
+    cmd:option('-save_epoch', 16, 'every how many epochs the model is saved')
     
     -- Options for loading the data
-      cmd:option('-data_path', '/data/ethierer/ObjectDetection/FasterRCNN/Data/FastRCNN/VGG/VOC2007TrainVal_noGt/')
+      cmd:option('-data_path', '/data/ethierer/ObjectDetection/FasterRCNN/Data/FastRCNN/Res50/VOC2007TrainVal_sm/')
       
     -- Options for Loading the Database from Scretch
         cmd:option('-train_list', "-/home/ethierer/Hiwi/Projects/Data/Pascal Vor Challenge 2007/VOCdevkit/VOC2007/ImageSets/Main/train.txt" , 'for testing')
@@ -89,7 +89,7 @@ if not opt then
     cmd:option('-bg_thresh_lo_f', 0.1, 'threshhold >= for background bounding box')
     cmd:option('-rois_per_batch_f', 128, 'total rois for a batch')
     cmd:option('-fg_fraction_f', 0.25, 'share of foreground rois per batch')
-    cmd:option('-topN_proposals', 300, 'number of rois with highest score from rpn considered for rcnn')
+    cmd:option('-topN_proposals', 2000, 'number of rois with highest score from rpn considered for rcnn')
     cmd:option('-numClasses', 20, 'number of classes of dataset')
     cmd:option('-divGrad', 1, 'number of classes of dataset')
     --cmd:option('-numClasses', 20, 'threshhold for correct bounding box')

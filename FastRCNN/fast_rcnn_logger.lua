@@ -1,7 +1,7 @@
 
 lossLogger = optim.Logger(paths.concat(conf.save_model_state, 'loss.log'))
 lossLogger:setNames{'% mean loss (train set)', '% mean loss (val set)'}
-lossLogger:style{'+-', '+-'}
+lossLogger:style{'+-', '+-', '+-'}
 lossLogger.showPlot = false
 
 reg_accuracyLogger = optim.Logger(paths.concat(conf.save_model_state, 'reg_accuracy.log'))
@@ -20,6 +20,8 @@ classLogger:style{'+-', '+-', '+-', '+-'}
 classLogger.showPlot = false
 
 train_loss = 0
+train_loss_reg = 0
+train_loss_cls = 0
 train_reg_accuracy = 0
 train_reg_correct = 0
 
@@ -40,7 +42,7 @@ local reg_correct_dir = paths.concat(conf.save_model_state, 'reg_correct.png')
 
 function logging()
 
-    lossLogger:add{train_loss, val_loss}
+    lossLogger:add{train_loss, train_loss_reg, train_loss_cls }
     lossLogger:plot()
     reg_accuracyLogger:add{train_reg_accuracy, val_reg_accuracy}
     reg_accuracyLogger:plot()
