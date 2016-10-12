@@ -57,47 +57,174 @@ function append_bbox_regression_targets(conf, image_roidb, means, stds)
 
     for i = 1,nr_images do
       for j = 1,conf.scales:size(1) do
-        local targets = image_roidb[i].bbox_targets[j][1]  
-        local targets_flipped = image_roidb[i].bbox_targets[j][2]
+        local targets = roidb[i].bbox_targets[j][1]   
+        --local targets_flipped = roidbs[i].bbox_targets[j][2]   
+
         for k = 1,targets:size(1) do
-          if (targets[{k,1}] > 0) then
+          if (targets[{k,1}] > 0 and targets[{k,1}] < 21 ) then
             class_counts = class_counts + 1
-            sums:add(targets[{k,{2,5}}])
-            squared_sum:add(torch.pow(targets[{k,{2,5}}], 2))
+            local temp = targets[{k,{2,5}}]
+            sums:add(temp)
+            --temp:pow(2)
+            --squared_sum:add(temp)
           end 
-          
-          if (targets_flipped[{k,1}] > 0) then
+          --[[
+          if (targets_flipped[{k,1}] > 0 and targets_flipped[{k,1}] < conf.numClasses +1 ) then
+            local temp = targets_flipped[{k,{2,5}}]
             class_counts = class_counts + 1
-            sums:add(targets_flipped[{k,{2,5}}])
-            squared_sum:add(torch.pow(targets_flipped[{k,{2,5}}], 2))
-          end
-        end      
+            sums:add(temp)
+            temp:pow(2)
+            squared_sum:add(temp)
+          en]]--
+        end              
+      end
+    end
+    print('Mean')
+    
+    --print(sums)
+    --print(class_counts)
+    means = torch.div(sums, class_counts)
+    --print(means)
+    means = means[{1, {1,4}}]    
+    
+    local mean = torch.zeros(2, means:size(1))
+    mean[{2,{}}] = means
+    means = mean
+
+    print(means)
+    
+    class_counts = 0
+    for i = 1,nr_images do
+      for j = 1,conf.scales:size(1) do
+        local targets = roidb[i].bbox_targets[j][1]   
+        --local targets_flipped = roidbs[i].bbox_targets[j][2]   
+
+        for k = 1,targets:size(1) do
+          if (targets[{k,1}] > 0 and targets[{k,1}] < 21 ) then
+            local temp = targets[k][{{2,5}}]:reshape(4)
+            class_counts = class_counts + 1
+            temp:csub(means[{2,{}}])
+            temp:pow(2)
+            squared_sum:add(temp)
+          end 
+          --[[
+          if (targets_flipped[{k,1}] > 0 and targets_flipped[{k,1}] < conf.numClasses +1 ) then
+            local temp = targets_flipped[{k,{2,5}}]
+            class_counts = class_counts + 1
+            sums:add(temp)
+            temp:pow(2)
+            squared_sum:add(temp)
+          en]]--
+        end              
       end
     end
     -- sums / classes
-    means = torch.div(sums, class_counts)
-    means = means[{1, {1,4}}]
+    print('STD')
+    --print(class_counts)
+    --print(squared_sum)
+    
+    --print(mean)
     -- sqrt((squared_sum / class_counts)- means²)
-    stds = torch.pow(torch.add(torch.div(squared_sum, class_counts),- torch.pow(means, 2)), 0.5)
+    
+    stds = squared_sum / (class_counts -1)
+    stds:sqrt()
+    --stds = torch.pow(torch.add(torch.div(squared_sum, class_counts),- torch.pow(means[{2,{}}], 2)), 0.5)
+    
+    print(stds)
+    
+    local std = torch.zeros(2, stds:size(2))
+    std[{2,{}}] = stds
+    stds = std
+    --print(stds)
   end
 
-  -- normalize targets
+  -- normalize all bbox targets
   for i = 1, nr_images do
     for j = 1,conf.scales:size(1) do
-      local targets = image_roidb[i].bbox_targets[j][1]
-      local targets_flipped = image_roidb[i].bbox_targets[j][2]
+      local targets = roidb[i].bbox_targets[j][1]
+      local targets_flipped = roidb[i].bbox_targets[j][2]  
       for k = 1,targets:size(1) do
-        if targets[{k,1}] > 0 then
-          roidb[i].bbox_targets[j][1][k][{{2,5}}] =  roidb[i].bbox_targets[j][1][k][{{2,5}}] - means
-          roidb[i].bbox_targets[j][1][k][{{2,5}}] = torch.cdiv(roidb[i].bbox_targets[j][1][k][{{2,5}}], stds[{1, {1,4}}])
+        if targets[{k,1}] > 0 and targets[{k,1}] < 21 then
+          roidb[i].bbox_targets[j][1][k][{{2,5}}]:csub(means[2])
+          roidb[i].bbox_targets[j][1][k][{{2,5}}]:cdiv(stds[2])
+
         end 
-        if targets_flipped[{k,1}] > 0 then
-          roidb[i].bbox_targets[j][2][k][{{2,5}}] =  roidb[i].bbox_targets[j][2][k][{{2,5}}] - means
-          roidb[i].bbox_targets[j][2][k][{{2,5}}] = torch.cdiv(roidb[i].bbox_targets[j][2][k][{{2,5}}], stds[{1, {1,4}}])
-        end 
-      end   
+        if targets_flipped[{k,1}] > 0 and targets_flipped[{k,1}] < 21 then
+          roidb[i].bbox_targets[j][2][k][{{2,5}}]:csub(means[2])
+          roidb[i].bbox_targets[j][2][k][{{2,5}}]:cdiv(stds[2])
+        end
+      end    
     end
   end
+  
+  local mean_temp = torch.zeros(4)
+  local std_temp = torch.zeros(4)
+  local count = 0
+  for i = 1,nr_images do 
+      local targets = roidb[i].bbox_targets[1][1] 
+      
+      for j = 1,targets:size(1) do
+        if targets[j][1] > 0 and targets[j][1] < 21 then
+          local temp = targets[j][{{2,5}}]:reshape(4)
+          mean_temp:add(temp)
+          count = count + 1
+        end
+      end
+      
+      --print(mean_temp)
+      --targets = roidbs[i].bbox_targets[1][2] 
+      --[[
+      for j= 1,targets:size(1) do
+        if targets[j][1] > 0 and targets[j][1] < 21 then
+          local temp = targets[j][{{2,5}}]:reshape(4)
+          mean_temp:add(temp)
+          count = count + 1
+        end
+      end
+      ]]--
+      
+  end
+  
+  print('New_mean')
+  print(mean_temp)
+  mean_temp:div(count)
+  print(mean_temp)
+  
+  count = 0
+  
+  for i = 1,nr_images do 
+      local targets = roidb[i].bbox_targets[1][1] 
+      
+      for j = 1,targets:size(1) do
+        if targets[j][1] > 0 and targets[j][1] < 21 then
+          local temp = targets[j][{{2,5}}]:reshape(4)
+          temp:csub(mean_temp)
+          temp:pow(2)
+          std_temp:add(temp)
+          count = count + 1
+        end
+      end
+      
+      --targets = roidbs[i].bbox_targets[1][2] 
+      
+      --[[
+      for j= 1,targets:size(1) do
+        if targets[j][1] > 0 and targets[j][1] < 21 then
+          local temp = targets[j][{{2,5}}]:reshape(4)
+          temp:csub(mean_temp)
+          temp:pow(2)
+          std_temp:add(temp)
+          count = count + 1
+        end
+      end
+      ]]--
+      
+  end
+  print('New_std')
+  print(std_temp)
+  std_temp:div(count-1)
+  std_temp:sqrt()
+  print(std_temp)  
 
   return roidb, means, stds
 end

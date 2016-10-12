@@ -75,6 +75,8 @@ function train()
   train_reg_accuracy = 0
   train_reg_correct = 0
   
+  train_loss_reg = 0
+  train_loss_cls = 0
   train_corr = 0
   train_true_pos = 0
   train_false_neg = 0
@@ -140,14 +142,17 @@ function train()
   train_true_pos = train_true_pos / epochL
   train_false_neg = train_false_neg / epochL
   train_false_pos = train_false_pos / epochL
+  train_loss_reg = train_loss_reg / epochL
+  train_loss_cls = train_loss_cls / epochL
   
   
-  print(string.format('Epoch: [%d][TRAINING SUMMARY] Total Time(s): %.2f   loss:%.4f   reg_acc:%.4f   reg_corr:%.4f', epoch, torch.toc(tic), train_loss, train_reg_accuracy, train_reg_correct))
+  print(string.format('Epoch: [%d][TRAINING SUMMARY] Total Time(s): %.2f   loss:%.4f  loss_reg: %.4f  loss_cls: %.4f reg_acc:%.4f   reg_corr:%.4f', epoch, torch.toc(tic), train_loss, train_loss_reg, train_loss_cls, train_reg_accuracy, train_reg_correct))
   print('\n')
 
   collectgarbage()
 
   if epoch % conf.save_epoch == 0 then
+    model:clearState()
     if torch.type(model) == 'nn.DataParallelTable' then
       torch.save(paths.concat(conf.save_model_state, 'Models/model_' .. epoch .. '.t7'), model:get(1))
     else
@@ -181,6 +186,8 @@ function train_batch(roidbs)
     end
     
     local f = 0
+    local loss_reg = 0
+    local loss_cls = 0
     local reg_acc = 0
     local reg_correct = 0
     local imgCount = 12
@@ -218,16 +225,17 @@ function train_batch(roidbs)
             
       collectgarbage()
       
-      f = conf.weight_scec * log:forward(output[1], target_output[1]) /nr_rois + conf.weight_l1crit * sl1:forward(output[2], target_output[2]) / nr_rois
+      loss_reg = loss_reg + conf.weight_l1crit * sl1:forward(output[2], target_output[2]) / nr_rois
+      loss_cls = loss_cls + conf.weight_scec * log:forward(output[1], target_output[1]) /nr_rois
+      f = loss_cls + loss_reg
       
       local gradient = {}
       table.insert(gradient, log:backward(output[1], target_output[1]))
       table.insert(gradient, sl1:backward(output[2], target_output[2]))
       
       if conf.divGrad == 1 then
-        --local mean = gradient[1]:mean()
-        gradient[1]:div(nr_rois)
-        gradient[2]:div(nr_rois)
+        gradient[1]:mul(conf.weight_scec):div(nr_rois)
+        gradient[2]:mul(conf.weight_l1crit):div(nr_rois)
       end
       
       
@@ -318,9 +326,7 @@ function train_batch(roidbs)
         
         processedImages = processedImages + conf.batch_size
       end
-      
-      f = f / conf.batch_size
-      
+            
       return f, gradParameters--:div(opt.batchSize) --------------------------------------------------
   end
             
@@ -343,9 +349,11 @@ function train_batch(roidbs)
   train_loss = train_loss + f 
   train_reg_accuracy = train_reg_accuracy + reg_acc
   train_reg_correct = train_reg_correct + reg_correct
+  train_loss_reg = train_loss_reg + loss_reg
+  train_loss_cls = train_loss_cls + loss_cls
   
-  print(('Epoch: [%d][%d/%d]\tTime(s) %.3f  loss %.4f  LR %.0e  RA:%.4f  RC:%.4f'):format(
-      epoch, batchNumber, math.floor(numOfTrainImages/conf.batch_size), timer:time().real, f, 
+  print(('Epoch: [%d][%d/%d]\tTime(s) %.3f  loss %.4f  loss_reg %.4f  loss_cls %.4f LR %.0e  RA:%.4f  RC:%.4f'):format(
+      epoch, batchNumber, math.floor(numOfTrainImages/conf.batch_size), timer:time().real, f, loss_reg, loss_cls,
       optimState.learningRate, reg_acc, reg_correct ))
   
 

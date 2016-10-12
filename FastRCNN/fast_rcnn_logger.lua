@@ -1,6 +1,6 @@
 
 lossLogger = optim.Logger(paths.concat(conf.save_model_state, 'loss.log'))
-lossLogger:setNames{'% mean loss (train set)', '% mean loss (val set)'}
+lossLogger:setNames{'% mean loss', '% reg_loss ', '% cls_loss'}
 lossLogger:style{'+-', '+-', '+-'}
 lossLogger.showPlot = false
 

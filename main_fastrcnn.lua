@@ -25,6 +25,7 @@ dofile('utilis/util_generate_batch_roidbs.lua')
 dofile('utilis/util_flip_rois.lua')
 dofile('utilis/util_binaryToIdx.lua')
 dofile('utilis/util_pascal_voc_2007_labels.lua')
+dofile('utilis/util_nms.lua')
 dofile('Preprocessing/preparation_cal_feature_map_size.lua')
 dofile('FastRCNN/fast_rcnn_prepare_image_roidb.lua')
 dofile('FastRCNN/fast_rcnn_map_im_rois_to_feat_map.lua')
@@ -59,22 +60,8 @@ dofile('utilis/util_restric_rois_image_size.lua')
 dofile('FastRCNN/fast_rcnn_logger.lua')
 
 if conf.testing then 
-    while true do   
-      --proposal_train()
-      train()
-      validation()
-      logging()
-      writeReport()
-      epoch = epoch+1
-      if(conf.learningRate ~= 0) then
-        if(epoch % conf.epoch_step == 0) then
-          optimState.learningRate = optimState.learningRate*conf.gamma
-        end
-      end
-      if(epoch == 10 * conf.epoch_step) then
-        break
-      end  
-    end
+    dofile('FastRCNN/fast_rcnn_test.lua')
+    testing()
 else
 	dofile('FastRCNN/fast_rcnn_train_simple.lua')
   --dofile('FastRCNN/fast_rcnn_validate.lua')

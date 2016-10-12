@@ -32,8 +32,7 @@ local function paramsForEpoch(epoch)
     end
     local regimes = {
         -- start, end,    LR,   WD,
-        {  1,    1,   1e-4,   5e-4, },
-        {  2,    12,   1e-3,   5e-4, },
+        {  1,    12,   1e-3,   5e-4, },
         {  13,    20,   1e-4,   5e-4, },
         { 19,     1e8,   1e-4,   5e-4  },
         { 13,     1e8,   1e-4,   0 },
@@ -179,8 +178,8 @@ function train_batch(roidbs)
 
             
       collectgarbage()
-      loss_cls = loss_cls + conf.weight_l1crit * sl1:forward(output[2], target_output[2]) / nr_rois
-      loss_reg = loss_reg + conf.weight_scec * log:forward(output[1], target_output[1]) /nr_rois
+      loss_reg = loss_reg + conf.weight_l1crit * sl1:forward(output[2], target_output[2]) / nr_rois
+      loss_cls = loss_cls + conf.weight_scec * log:forward(output[1], target_output[1]) /nr_rois
       f = loss_cls + loss_reg
       
       local gradient = {}
